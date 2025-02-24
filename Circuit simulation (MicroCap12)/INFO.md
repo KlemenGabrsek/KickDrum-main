@@ -1,6 +1,6 @@
 # Circuit simulation files
 
-![](Base drum circuit in MC12.png)
+![](Base_drum_circuit_in_MC12.png)
 
 
 
