@@ -34,22 +34,22 @@
 
 #define NumOfBut 32
 
-#define NumBut_1  1
-#define NumBut_2  2
-#define NumBut_3  3
-#define NumBut_4  4
-#define NumBut_5  5
-#define NumBut_6  6
-#define NumBut_7  7
-#define NumBut_8  8
-#define NumBut_9  9
-#define NumBut_10 10
-#define NumBut_11 11
-#define NumBut_12 12
-#define NumBut_13 13
-#define NumBut_14 14
-#define NumBut_15 15
-#define NumBut_16 16
+#define NumBut_1  8
+#define NumBut_2  9
+#define NumBut_3  10
+#define NumBut_4  11
+#define NumBut_5  13
+#define NumBut_6  12
+#define NumBut_7  15
+#define NumBut_8  14
+#define NumBut_9  20
+#define NumBut_10 22
+#define NumBut_11 21
+#define NumBut_12 23
+#define NumBut_13 24
+#define NumBut_14 25
+#define NumBut_15 26
+#define NumBut_16 27
 
 #define NumBut_17 NumBut_1
 #define NumBut_18 NumBut_2
@@ -480,7 +480,7 @@
     LEDStatus36, LEDStatus37, LEDStatus38, LEDStatus39 \
 }
 
-#define LEDStatus0 0x01
+#define LEDStatus0 	0x01
 #define LEDStatus1	0x01
 #define LEDStatus2	0x01
 #define LEDStatus3	0x01
@@ -492,7 +492,7 @@
 #define LEDStatus9	0x01
 #define LEDStatus10	0x01
 #define LEDStatus11	0x01
-#define LEDStatus12  0x01
+#define LEDStatus12 0x01
 #define LEDStatus13	0x01
 #define LEDStatus14	0x01
 #define LEDStatus15	0x01
@@ -538,7 +538,7 @@
 #define LED_3_BLINKY  0x0
 #define LED_4_BLINKY  0x0
 #define LED_5_BLINKY  0x0
-#define LED_6_BLINKY  0x1
+#define LED_6_BLINKY  0x0
 #define LED_7_BLINKY  0x0
 #define LED_8_BLINKY  0x0
 #define LED_9_BLINKY  0x0

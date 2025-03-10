@@ -91,13 +91,26 @@ uint8_t CheckStructTipke(struct SendData_BUT21 * DataFor_IS32,struct Switch *Tip
 uint8_t CopyDataFromSliderToInstrument(struct Instrument *Instruments,struct Switch *Tipke,struct  Slider *Sliders,uint8_t *InstrumentIndix);
 uint8_t CopyDataFromSliderToGenericInfoStruct(struct Switch *Tipke,struct  Slider *Sliders,struct SetUpAtStart *pGenericInfo);
 
-uint8_t MapButtonStepsToInstruments(struct Button *Buttons,struct Instrument *Instruments,struct Switch *Tipke,struct  Slider *Sliders);
+uint8_t MapButtonStepsToInstruments(struct Button *Buttons,struct Instrument *Instruments,struct Switch *Tipke,struct  Slider *Sliders,uint8_t *InstrumentIndix,uint8_t * NumberButtonIndex);
+uint8_t MapButtonStepsToInstrumentsAndCheckVar(struct Button *Buttons_varA,struct Button *Buttons_varB,struct Instrument *Instruments,struct Switch *Tipke,struct  Slider *Sliders,uint8_t *InstrumentIndix,uint8_t * NumberButtonIndex);
+
+uint8_t StartAccentTimer( TIM_HandleTypeDef *ArrayOfTimerPointers[10],uint16_t CCR_ms,uint16_t AAR_ms);
+uint8_t StopAccentTimer( TIM_HandleTypeDef *ArrayOfTimerPointers[10]);
+uint32_t ConvertBPM_ToTimerTicks(uint16_t BPM);
+uint8_t TurnONNumberLED(struct Switch *Tipke,uint8_t * NumberButtonIndex,uint8_t LEDIndex_1_16);
+uint8_t TurnOFFNumberLED(struct Switch *Tipke,uint8_t * NumberButtonIndex,uint8_t LEDIndex_1_16);
+uint8_t TurnOnSequencer(struct Switch *Tipke,uint8_t * NumberButtonIndex);
+
+uint8_t CheckStructTipkeSequencerMode(struct SendData_BUT21 * DataFor_IS32,struct Switch *Tipke,uint8_t PanelLOrR);
+uint8_t TurnOFFAllNumberLED(struct Switch *Tipke,uint8_t * NumberButtonIndex);
 
 extern uint8_t LedControlRegAll_[2][3];
 extern uint8_t PwmControlReg1_18_[2][4][5];
 extern uint8_t  CurrentBlinkySwitchIndex[5];
 extern uint8_t gVarBlinky;
 extern uint8_t o;
+extern uint8_t CurrentNumberInSeqState;
+
 //extern TIM_HandleTypeDef* phtim6;
 //extern uint8_t PwmControlReg6_10_[5];
 //extern uint8_t PwmControlReg11_15_[5];

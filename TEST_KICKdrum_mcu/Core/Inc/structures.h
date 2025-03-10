@@ -185,6 +185,7 @@ struct Instrument {
 struct Button{
 	struct Instrument pointersToInstrument[NUM_OF_INSTRUMENTS_PER_NUMBER_BUT];
 	uint8_t NumOfInstruments;
+	uint8_t InstrumentIndexOnThisBut[NUM_OF_INSTRUMENTS_PER_NUMBER_BUT];
 
 };
 

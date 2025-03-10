@@ -115,6 +115,9 @@ uint16_t PreviousTempoVal =0;
 //current picked instrument
 uint8_t CurrentPickedInstrument = 0;
 
+// current number in sequencer mode
+uint8_t CurrentNumberInSeqState = 1;
+
 
 
 /* USER CODE END 0 */
@@ -126,6 +129,8 @@ uint8_t CurrentPickedInstrument = 0;
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+
+
 
 	 /*variables for determinating KickDrum State
 	       * ____________________________________________________________________________________
@@ -140,6 +145,9 @@ int main(void)
 
 	  //WHAT INDEX (TIPKA 0-39) DOES EACH INSTRUMENT HAVE
 	  uint8_t InstrumentIndix[] = INSTRUMENTINDEX;
+
+	  //each number button has its own number/index in Tipke array
+	  uint8_t NumberButtonIndex[]=NUMBUT_ARRAY;
 
 	//zbirka instrumentov, trenutno bo stevilo instrumentov enako stevilu vseh instruemntov, vsak
 	//instrument bo imel samo eno vrednost -> zaenkrat
@@ -175,18 +183,30 @@ int main(void)
 	 * 15 - Button[14]
 	 */
 
-	struct Button Buttons[15];
+	struct Button Buttons_varA[16];
+	struct Button Buttons_varB[16];
 
-	for (uint8_t i =0;i<15;i++){
-		Buttons[i].NumOfInstruments=0;
+
+	for (uint8_t i =0;i<16;i++){
+		Buttons_varA[i].NumOfInstruments=0;
+		for(uint8_t l = 0;l<NUM_OF_INSTRUMENTS_PER_NUMBER_BUT;l++){
+			Buttons_varA[i].InstrumentIndexOnThisBut[l]=0;
+		}
 	}
+
+	for (uint8_t i =0;i<16;i++){
+			Buttons_varB[i].NumOfInstruments=0;
+			for(uint8_t l = 0;l<NUM_OF_INSTRUMENTS_PER_NUMBER_BUT;l++){
+				Buttons_varB[i].InstrumentIndexOnThisBut[l]=0;
+			}
+		}
 
 	// struct for holding generic information
 	struct SetUpAtStart GenericInfo;
 	struct SetUpAtStart *pGenericInfo=&GenericInfo;
 
 	pGenericInfo->Prescale_Status = 0;	//normal speed
-	pGenericInfo->Tempo = 100;			// generic tempo
+	pGenericInfo->Tempo = 100;			// generic tempo in BPM
 	pGenericInfo->varA_B_Status = 0; // no prescale
 
 	struct SendData_BUT21 DataFor_IS32[NUM_OF_IS32_STRUCT_FOR_SENDING];
@@ -196,7 +216,7 @@ int main(void)
 	 // ZBIRKA ZA VSE TIMERJE, za lažje podajanje v funkcije
 	 //ArrayOfTimerPointers[1] SE uporablja za blinky funkcijo
 
-	 TIM_HandleTypeDef *ArrayOfTimerPointers[2] = {&htim1,&htim10};
+	 TIM_HandleTypeDef *ArrayOfTimerPointers[] = {&htim1,&htim10,&htim8,&htim3,&htim5,&htim2,&htim13,&htim1,&htim3,&htim12};
 
 	 //define I2C address for BUT21
 	 	uint16_t AddrBUT21_I2C =0xB8;
@@ -881,7 +901,8 @@ int main(void)
       WriteDataI2C_Wrapper(DataFor_BUT21_R, 0, 1);
 
 
-
+      // flag for timer accent timer start
+      uint8_t AccentTimerStartFlag=0;
 
 
   /* USER CODE END 2 */
@@ -925,15 +946,61 @@ int main(void)
 			 // funkcija za prepisovanje podatkov iz sliderjev in Tipk v Instruments strukture
 			 CopyDataFromSliderToInstrument(Instruments,Tipke,Sliders,InstrumentIndix);
 			 //funkcija za določanje kateri inštruemnt se mora špilat na kateri tipki
-			 MapButtonStepsToInstruments(Buttons,Instruments,Tipke,Sliders);
-
+			 //MapButtonStepsToInstruments(Buttons_varA,Instruments,Tipke,Sliders,InstrumentIndix,NumberButtonIndex);
+			 MapButtonStepsToInstrumentsAndCheckVar(Buttons_varA,Buttons_varB,Instruments,Tipke,Sliders,InstrumentIndix,NumberButtonIndex);
 			 // turn on/off LEDs from Tipke structure, Timer is used for LED blinking
 			 CheckStructTipke(DataFor_IS32, Tipke,ArrayOfTimerPointers,0); //LEFT PANEL
 			 CheckStructTipke(DataFor_IS32_R, Tipke,ArrayOfTimerPointers,1); //right PANEL
 
+			 //CHECK start/stop button for state
+			 if(Tipke[6].LEDOnOff == 1 ){
+				 KickDrumState =1;
+			 }
+
 
 	  } else if (KickDrumState == 1) { // kick drum is in sequencer mode
 
+
+		  if (BUT21CallBack == 1 ){// left panel interrupt
+			   ReceiveDataI2C_Wrapper(DataFrom_BUT21, 0, 1);
+			  ParseDataFromInterruptFactor(Sliders,DataFrom_BUT21,Tipke,DataFor_BUT21,1);
+			  //flag for processor to work on CAPsen data
+			  BUT21CallBack = 0;
+		  }
+		  //CheckStructTipke(DataFor_IS32, Tipke,ArrayOfTimerPointers,0); //LEFT PANEL
+
+		  if( AccentTimerStartFlag == 0){
+			  //start ACCENT timer
+			  //StartAccentTimer(ArrayOfTimerPointers, 3,  ConvertBPM_ToTimerTicks(pGenericInfo->Tempo));
+			  StartAccentTimer(ArrayOfTimerPointers, 3,  (uint16_t)ConvertBPM_ToTimerTicks(200));
+			  AccentTimerStartFlag =1;
+		  }
+
+		  //check global variable CurrentNumberInSeqState and turn on that LED
+		  TurnOnSequencer(Tipke,NumberButtonIndex);
+
+		  //Tipke[NumberButtonIndex[CurrentNumberInSeqState-1]].SwitchOnDetection = 1;
+
+
+		  // turn on/off LEDs from Tipke structure, Timer is used for LED blinking
+		  CheckStructTipkeSequencerMode(DataFor_IS32, Tipke,0); //LEFT PANEL
+		  CheckStructTipkeSequencerMode(DataFor_IS32_R, Tipke,1); //right PANE
+		 //CheckStructTipke(DataFor_IS32, Tipke,ArrayOfTimerPointers,0); //LEFT PANEL
+		 //CheckStructTipke(DataFor_IS32_R, Tipke,ArrayOfTimerPointers,1); //right PANE
+
+		  //CHECK start/stop button for state
+		 if(Tipke[6].LEDOnOff == 0 ){
+			 // return back to programming state
+			 KickDrumState =0;
+			 //stop ACCENT timer
+			 StopAccentTimer(ArrayOfTimerPointers);
+			 AccentTimerStartFlag =0;
+			 CurrentNumberInSeqState = 1;
+			 TurnOFFAllNumberLED(Tipke, NumberButtonIndex);
+			 // turn on/off LEDs from Tipke structure, Timer is used for LED blinking
+			  CheckStructTipkeSequencerMode(DataFor_IS32, Tipke,0); //LEFT PANEL
+			  CheckStructTipkeSequencerMode(DataFor_IS32_R, Tipke,1); //right PANE
+		 }
 	  }else {
 		  while(1);
 	  }
@@ -1398,7 +1465,7 @@ static void MX_TIM8_Init(void)
   {
     Error_Handler();
   }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_OC2REF;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim8, &sMasterConfig) != HAL_OK)
   {
@@ -1693,14 +1760,26 @@ if (GPIO_Pin ==INTB1_Pin ){
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
-
-	if (gVarBlinky ==2){
-		gVarBlinky =1;
-	} else if (gVarBlinky == 1) {
-		gVarBlinky = 0;
-	}else if (gVarBlinky ==0){
-		gVarBlinky = 1;
+	if(htim->Instance==TIM10){
+		if (gVarBlinky ==2){
+			gVarBlinky =1;
+		} else if (gVarBlinky == 1) {
+			gVarBlinky = 0;
+		}else if (gVarBlinky ==0){
+			gVarBlinky = 1;
+		}
 	}
+
+	}
+
+
+void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim){
+	if(htim->Instance==TIM8){
+			CurrentNumberInSeqState++;
+			if(CurrentNumberInSeqState > 16){
+				CurrentNumberInSeqState=1;
+			}
+		}
 }
 
 /* USER CODE END 4 */

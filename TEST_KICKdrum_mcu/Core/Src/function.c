@@ -1467,32 +1467,232 @@ uint8_t CopyDataFromSliderToInstrument(struct Instrument *Instruments,struct Swi
 	return 0;
 }
 
-uint8_t MapButtonStepsToInstruments(struct Button *Buttons,struct Instrument *Instruments,struct Switch *Tipke,struct  Slider *Sliders){
+uint8_t MapButtonStepsToInstruments(struct Button *Buttons,struct Instrument *Instruments,struct Switch *Tipke,struct  Slider *Sliders,uint8_t *InstrumentIndix,uint8_t * NumberButtonIndex){
 	uint8_t j=0;
+	uint8_t InstrumenRepetionFlag=0;
+
+	//chack what variant is it A or B
 
 	//check if there is any pressed instruments
 	if(Tipke[InstrumentIndix[CurrentPickedInstrument]].LEDOnOff == 1 ){
 		//go trough all number buttons
 		for(uint8_t i=0; i< 16;i++){
 			//check if any button is pressed
-			if()
-			//to local variable write number of used spaces in one Button Array for instruements
-			j=Buttons[i].NumOfInstruments;
-			//write instrument pointer to button structure (array of pointers)
-			Buttons[i].pointersToInstrument[j] =&Instruments[CurrentPickedInstrument];
-			//after each writing increse counter of instrument in each Buttone
-			j++;
-			//check if j is bigger then max num of available spaces for instruement in one Button structure
-			if(j < NUM_OF_INSTRUMENTS_PER_NUMBER_BUT){
-				//write counter j to struct Button
-				Buttons[i].NumOfInstruments = j;
-			}else if (j >= NUM_OF_INSTRUMENTS_PER_NUMBER_BUT) {
-				// if j is bigger then the number of spaces in Button struct, reset j
-				Buttons[i].NumOfInstruments=0;
+			if(Tipke[NumberButtonIndex[i]].LEDOnOff == 1){
+				//j=Buttons[i].NumOfInstruments;
+				if ((j == 0) && (Buttons[i].NumOfInstruments == 0)){
+					//write instrument pointer to button structure (array of pointers)
+					Buttons[i].pointersToInstrument[j] =Instruments[CurrentPickedInstrument];
+					//after each writing increse counter of instrument in each Buttone
+					j++;
+					Buttons[i].NumOfInstruments = j;
+					Buttons[i].InstrumentIndexOnThisBut[0] = InstrumentIndix[CurrentPickedInstrument];
+				} else {
+					j=Buttons[i].NumOfInstruments;
+				// check if this instrument is already written in the Buttons array
+					for (uint8_t k = 0; k<j;k++){
+						// if the instrument is already in the array go to next instance of button
+						if (Buttons[i].InstrumentIndexOnThisBut[k] ==  InstrumentIndix[CurrentPickedInstrument]){
+							//set the repetiotion flag
+							InstrumenRepetionFlag = 1;
+							break;
+						}
+					}
+					//check flag,if the instruemnt is already present, do not write again
+					if (InstrumenRepetionFlag !=1 ){
+
+						//to local variable write number of used spaces in one Button Array for instruements
+						j=Buttons[i].NumOfInstruments;
+						if(j==NUM_OF_INSTRUMENTS_PER_NUMBER_BUT){
+							j=0;
+						}
+						Buttons[i].InstrumentIndexOnThisBut[j] =  InstrumentIndix[CurrentPickedInstrument];
+						//write instrument pointer to button structure (array of pointers)
+						Buttons[i].pointersToInstrument[j] =Instruments[CurrentPickedInstrument];
+						//after each writing increse counter of instrument in each Buttone
+						j++;
+						//check if j is bigger then max num of available spaces for instruement in one Button structure
+						//if(j < NUM_OF_INSTRUMENTS_PER_NUMBER_BUT){
+							//write counter j to struct Button
+							Buttons[i].NumOfInstruments = j;
+						//}else if (j == NUM_OF_INSTRUMENTS_PER_NUMBER_BUT) {
+							// if j is bigger then the number of spaces in Button struct, reset j
+							//Buttons[i].NumOfInstruments=0;
+						//}
+					}
+
+					}
+				}
+		}
+	}
+	return 0;
+}
+
+uint8_t MapButtonStepsToInstrumentsAndCheckVar(struct Button *Buttons_varA,struct Button *Buttons_varB,struct Instrument *Instruments,struct Switch *Tipke,struct  Slider *Sliders,uint8_t *InstrumentIndix,uint8_t * NumberButtonIndex){
+	if (Tipke[29].LEDOnOff == 0 ){ //var A
+		MapButtonStepsToInstruments(Buttons_varA,Instruments,Tipke,Sliders,InstrumentIndix,NumberButtonIndex);
+	} else if (Tipke[29].LEDOnOff == 1) { // var B
+		MapButtonStepsToInstruments(Buttons_varB,Instruments,Tipke,Sliders,InstrumentIndix,NumberButtonIndex);
+	}
+	return 0;
+}
+
+
+uint8_t StartAccentTimer( TIM_HandleTypeDef *ArrayOfTimerPointers[10],uint16_t CCR_ms,uint16_t AAR_ms){
+	//start timer
+	HAL_TIM_PWM_Start_IT(ArrayOfTimerPointers[2], TIM_CHANNEL_2);
+	 // HAL_TIM_Base_Start_IT
+	//set PWM on time to 1 ms
+	TIM8->CCR2 = CCR_ms;
+	TIM8->ARR = AAR_ms;
+
+
+	return 0;
+}
+
+uint8_t StopAccentTimer( TIM_HandleTypeDef *ArrayOfTimerPointers[10]){
+	HAL_TIM_PWM_Stop_IT(ArrayOfTimerPointers[2], TIM_CHANNEL_2);
+	return 0;
+}
+
+uint32_t ConvertBPM_ToTimerTicks(uint16_t BPM){
+	uint32_t TimerTicks = 0;
+	TimerTicks = 180000/(uint32_t)BPM;
+	return TimerTicks;
+}
+
+uint8_t TurnONNumberLED(struct Switch *Tipke,uint8_t * NumberButtonIndex,uint8_t LEDIndex_1_16){
+	Tipke[NumberButtonIndex[LEDIndex_1_16-1]].SwitchOnDetection = 1;
+	Tipke[NumberButtonIndex[LEDIndex_1_16-1]].SwitchOffDetection = 0;
+
+	return 0;
+}
+
+uint8_t TurnOFFNumberLED(struct Switch *Tipke,uint8_t * NumberButtonIndex,uint8_t LEDIndex_1_16){
+	Tipke[NumberButtonIndex[LEDIndex_1_16-1]].SwitchOnDetection = 0;
+	Tipke[NumberButtonIndex[LEDIndex_1_16-1]].SwitchOffDetection = 0;
+	Tipke[NumberButtonIndex[LEDIndex_1_16-1]].LEDOnOff = 1;
+	return 0;
+}
+
+uint8_t TurnOFFAllNumberLED(struct Switch *Tipke,uint8_t * NumberButtonIndex){
+	for(uint8_t i = 1 ; i<17;i++){
+		Tipke[NumberButtonIndex[i-1]].SwitchOnDetection = 1;
+		Tipke[NumberButtonIndex[i-1]].SwitchOffDetection = 1;
+		Tipke[NumberButtonIndex[i-1]].LEDOnOff = 1;
+	}
+	return 0;
+}
+
+uint8_t TurnOnSequencer(struct Switch *Tipke,uint8_t * NumberButtonIndex){
+	uint8_t LocalCurrentNumberInSeqState;
+	//__disable_irq();
+	LocalCurrentNumberInSeqState= CurrentNumberInSeqState;
+	//__enable_irq();
+	//turn off all  LEDs
+	for(uint8_t i = 1 ; i<17;i++){
+		if(LocalCurrentNumberInSeqState != i){
+			Tipke[NumberButtonIndex[i-1]].SwitchOnDetection = 1;
+			Tipke[NumberButtonIndex[i-1]].SwitchOffDetection = 1;
+			Tipke[NumberButtonIndex[i-1]].LEDOnOff = 1;
+		}
+	}
+	//turn on 1 LED
+	Tipke[NumberButtonIndex[LocalCurrentNumberInSeqState-1]].SwitchOnDetection = 1;
+	Tipke[NumberButtonIndex[LocalCurrentNumberInSeqState-1]].SwitchOffDetection = 0;
+	Tipke[NumberButtonIndex[LocalCurrentNumberInSeqState-1]].LEDOnOff = 0;
+
+	return 0;
+}
+
+uint8_t CheckStructTipkeSequencerMode(struct SendData_BUT21 * DataFor_IS32,struct Switch *Tipke,uint8_t PanelLOrR){
+
+	uint8_t CurrentLEDBlinky=0;
+	uint8_t CurrentLEDOnOff=0;
+	uint8_t CurrentLEDSwitchOnDetection=0;
+	uint8_t CurrentLEDSwitchOffDetection=0;
+	uint8_t LedIndexActionListON[5]={0,0,0,0,0};
+	uint8_t LedIndexActionListOFF[10]={0,0,0,0,0,0,0,0,0,0};
+	//index for LedIndexActionList
+	uint8_t k =0; // this index goes from 0 to 4, the same as number of spaces in LedIndexActionListON/OFF
+	uint8_t j =0;
+	//return status
+	uint8_t ret=0;
+
+	uint8_t IndexSwitch[3]={0,20,40};
+	uint8_t IndexSwitchSelectStart =0;
+	uint8_t IndexSwitchSelectStop =0;
+
+
+	// local var for tracking blinky switches , max number of simulatanius blinking LEDs is 5
+	if (PanelLOrR == 1){ // right panel
+		IndexSwitchSelectStart =1;
+		IndexSwitchSelectStop =2;
+		}else if(PanelLOrR == 0){// LEFT panel
+			IndexSwitchSelectStart =0;
+			IndexSwitchSelectStop =1;
+		}else{
+			while(1);
+		}
+
+
+	for (uint8_t i= IndexSwitch[IndexSwitchSelectStart];i<  IndexSwitch[IndexSwitchSelectStop];i++){
+
+		CurrentLEDBlinky = Tipke[i].LEDBlinky;
+		 CurrentLEDOnOff = Tipke[i].LEDOnOff;
+		CurrentLEDSwitchOnDetection = Tipke[i].SwitchOnDetection;
+		CurrentLEDSwitchOffDetection = Tipke[i].SwitchOffDetection;
+
+		// predpostavka: določena tipka lahko v eneme trenutku samo prižiga ali ugaša LED, ne more to narediti hkrati
+		// zato  spidnji if stavek dela eno ali drugo
+		// sestavlanje zbirke  actionlist za prižiganje LED
+		if(CurrentLEDSwitchOnDetection == 1  && CurrentLEDOnOff ==0 && CurrentLEDBlinky ==0){
+
+			LedIndexActionListON[j] = i;	// na eno od 5-ih mest dam trenutni index switcha, ki je bil prižgan
+			// povečamo index j za naslednji element v listi LedIndexActionListON
+			j= j+1;
+			// zaščita za index j, če gre preko namišljene vrednosti , je to error
+			if (j>4){// predpostavim da v enem branju strukture tipk, ne bo več kot 4 pritisnjene tipke
+				return 1;
 			}
+			 Tipke[i].SwitchOnDetection = 0; //resetiramo flag
+			 //current LED on off se postavi v funkciji za prižiganje LED
+
+			 // sestavlanje zbirke  actionlist za ugašanje  LED
+		} else if (CurrentLEDSwitchOnDetection == 1  && CurrentLEDOnOff ==1 && CurrentLEDSwitchOffDetection == 1 && CurrentLEDBlinky ==0) {
+
+			LedIndexActionListOFF[k] = i;	// na eno od 5-ih mest dam trenutni index switcha, ki je bil prižgan
+			// povečamo index j za naslednji element v listi LedIndexActionListON
+			k= k+1;
+			// zaščita za index j, če gre preko namišljene vrednosti , je to error
+			if (k>9){// predpostavim da v enem branju strukture tipk, ne bo več kot 4 pritisnjene tipke
+				return 1;
+			}
+			 Tipke[i].SwitchOnDetection = 0; //resetiramo flag
+			 Tipke[i].SwitchOffDetection = 0; //resetiramo flag
+			 //current LED on off se postavi v funkciji za prižiganje LED
+
 		}
 	}
 
+	// preverjamo če je sploh bil kakšen vnos v LedIndexActionListON, če ni bilo nobenega vnosa
+	//potem ni potrebe po pisanju v IS32 čip
+	if (j > 0){
+		// priziganje  LED
+		ret =TurnOnLedn(DataFor_IS32,Tipke,LedIndexActionListON,j,PanelLOrR);
+		if (ret != 0){
+			while(1);
+		}
+	}
+	// preverjamo če je sploh bil kakšen vnos v LedIndexActionListON, če ni bilo nobenega vnosa
+		//potem ni potrebe po pisanju v IS32 čip
+	if(k>0){
+		//ugasanje LED
+		ret = TurnOffLedn(DataFor_IS32,Tipke,LedIndexActionListOFF,k,PanelLOrR);
+		if (ret != 0){
+				while(1);
+		}
+	}
 
 
 
