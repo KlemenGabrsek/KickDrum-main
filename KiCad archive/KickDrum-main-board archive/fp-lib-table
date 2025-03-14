@@ -1,0 +1,6 @@
+(fp_lib_table
+  (lib (name "SMD_Power_Inductors_YPRH1508_Series")(type "KiCad")(uri "C:/Users/Klemen/Documents/KiCad/6.0/SMD_Power_Inductors_YPRH1508_Series.pretty")(options "")(descr "")(disabled))
+  (lib (name "Library")(type "KiCad")(uri "C:/Users/Klemen/Documents/KiCad/6.0/SMD_Power_Inductors_YPRH1508_Series.pretty/Library.pretty")(options "")(descr ""))
+  (lib (name "ul_XPS62A01DRLR")(type "KiCad")(uri "${KIPRJMOD}/new componts/ul_XPS62A01DRLR.pretty")(options "")(descr ""))
+  (lib (name "Library1")(type "KiCad")(uri "${KIPRJMOD}/new componts/ul_XPS62A01DRLR/KiCADv6/footprints.pretty/Library1.pretty")(options "")(descr ""))
+)

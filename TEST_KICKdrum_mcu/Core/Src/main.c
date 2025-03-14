@@ -130,6 +130,19 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 
+	// array for storing enable GPIOs of each instrument
+	uint16_t InstrumentEnablePin[] = GPIO_PIN_INSTRUMENT_ENABLE;
+	GPIO_TypeDef* GPIO_INSTRUMENT_ENABLE[] = {
+	    GPIOB,
+	    GPIOB,
+		GPIOA,
+	    GPIOC,
+	    GPIOB,
+	    GPIOB,
+	    GPIOC,
+	    GPIOC,
+	    GPIOB
+	};
 
 
 	 /*variables for determinating KickDrum State
@@ -162,6 +175,14 @@ int main(void)
 	 *7-RimShot					Instruments[7]
 	 */
 	struct Instrument Instruments[8];
+	struct Instrument InstrumentDummyZero;
+	struct Instrument *pInstrumentDummyZero = &InstrumentDummyZero;
+
+
+	//set all instrument values to defaul
+	SetInstrumentValToDefault(Instruments,8);
+	//set one instrumet as a dummy with all zeros
+	SetInstrumentValToDefault(pInstrumentDummyZero,1);
 
 	//zbirka struktur za tipke, vsaka tipka ima 6 pointerjev, tako da lahko nosi
 
@@ -189,6 +210,7 @@ int main(void)
 
 	for (uint8_t i =0;i<16;i++){
 		Buttons_varA[i].NumOfInstruments=0;
+		Buttons_varA[i].pointersToInstrument[0]=pInstrumentDummyZero;
 		for(uint8_t l = 0;l<NUM_OF_INSTRUMENTS_PER_NUMBER_BUT;l++){
 			Buttons_varA[i].InstrumentIndexOnThisBut[l]=0;
 		}
@@ -196,6 +218,7 @@ int main(void)
 
 	for (uint8_t i =0;i<16;i++){
 			Buttons_varB[i].NumOfInstruments=0;
+			Buttons_varB[i].pointersToInstrument[0]=pInstrumentDummyZero;
 			for(uint8_t l = 0;l<NUM_OF_INSTRUMENTS_PER_NUMBER_BUT;l++){
 				Buttons_varB[i].InstrumentIndexOnThisBut[l]=0;
 			}
@@ -216,7 +239,25 @@ int main(void)
 	 // ZBIRKA ZA VSE TIMERJE, za lažje podajanje v funkcije
 	 //ArrayOfTimerPointers[1] SE uporablja za blinky funkcijo
 
-	 TIM_HandleTypeDef *ArrayOfTimerPointers[] = {&htim1,&htim10,&htim8,&htim3,&htim5,&htim2,&htim13,&htim1,&htim3,&htim12};
+	 TIM_HandleTypeDef *ArrayOfTimerPointers1[] = {&htim1,&htim10,&htim8}; // array for accent timer start and for blinky
+
+
+	 TIM_HandleTypeDef *ArrayOfTimerPointers2[][2] = {{&htim1,&htim1}, //timers for basedrum
+	 												 {&htim2,&htim5}, // timer for snare drum
+	 												 {&htim3,&htim12}, // timer for cymbal
+	 												 {&htim2,NULL},// timer for Claves
+	 												 {&htim13,NULL}, // timer for conga
+	 												 {&htim12,NULL},	// timer for cowbell
+	 												 {&htim3,NULL}, // timer for tom
+	 												 {&htim2,NULL}}; // timer for rimshot
+	 uint8_t ArrayOfTimerChannels[][2] = {	{TIM_CHANNEL_2,TIM_CHANNEL_1 }, // base drum
+											 {TIM_CHANNEL_2,TIM_CHANNEL_1 },	//snare drum
+											 {TIM_CHANNEL_4,TIM_CHANNEL_2 },	//cymbal
+											 {TIM_CHANNEL_3,10 },	//claves
+											 {TIM_CHANNEL_1,10 },	//conga
+											 {TIM_CHANNEL_1,10 },	//cowbell
+											 {TIM_CHANNEL_3,10 },	//tom
+											 {TIM_CHANNEL_4,10 }};	//rimshot
 
 	 //define I2C address for BUT21
 	 	uint16_t AddrBUT21_I2C =0xB8;
@@ -904,6 +945,9 @@ int main(void)
       // flag for timer accent timer start
       uint8_t AccentTimerStartFlag=0;
 
+      // set ENABLE ACCENT
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);
+
 
   /* USER CODE END 2 */
 
@@ -949,8 +993,8 @@ int main(void)
 			 //MapButtonStepsToInstruments(Buttons_varA,Instruments,Tipke,Sliders,InstrumentIndix,NumberButtonIndex);
 			 MapButtonStepsToInstrumentsAndCheckVar(Buttons_varA,Buttons_varB,Instruments,Tipke,Sliders,InstrumentIndix,NumberButtonIndex);
 			 // turn on/off LEDs from Tipke structure, Timer is used for LED blinking
-			 CheckStructTipke(DataFor_IS32, Tipke,ArrayOfTimerPointers,0); //LEFT PANEL
-			 CheckStructTipke(DataFor_IS32_R, Tipke,ArrayOfTimerPointers,1); //right PANEL
+			 CheckStructTipke(DataFor_IS32, Tipke,ArrayOfTimerPointers1,0); //LEFT PANEL
+			 CheckStructTipke(DataFor_IS32_R, Tipke,ArrayOfTimerPointers1,1); //right PANEL
 
 			 //CHECK start/stop button for state
 			 if(Tipke[6].LEDOnOff == 1 ){
@@ -959,7 +1003,6 @@ int main(void)
 
 
 	  } else if (KickDrumState == 1) { // kick drum is in sequencer mode
-
 
 		  if (BUT21CallBack == 1 ){// left panel interrupt
 			   ReceiveDataI2C_Wrapper(DataFrom_BUT21, 0, 1);
@@ -970,16 +1013,34 @@ int main(void)
 		  //CheckStructTipke(DataFor_IS32, Tipke,ArrayOfTimerPointers,0); //LEFT PANEL
 
 		  if( AccentTimerStartFlag == 0){
+			  //convert instrument data to data that can be passed to timers-> this has to be done ony once
+			  ConvertInstrumentDataToTimers(Instruments);
+			  //set and start timers that define VCR
+			  SetAndStartTimers(Instruments,ArrayOfTimerChannels,ArrayOfTimerPointers2);
+			  //start ACCENT level timer
+			  HAL_TIM_PWM_Start(		&htim3,//&htim3
+			  							TIM_CHANNEL_1);//channel 1
+
+			  //convert instrument data to data that can be passed to timers-> this has to be done ony once
+			  //ConvertInstrumentDataToTimers(Instruments);
 			  //start ACCENT timer
-			  //StartAccentTimer(ArrayOfTimerPointers, 3,  ConvertBPM_ToTimerTicks(pGenericInfo->Tempo));
-			  StartAccentTimer(ArrayOfTimerPointers, 3,  (uint16_t)ConvertBPM_ToTimerTicks(200));
+			  StartAccentTimer(ArrayOfTimerPointers1, 15,  ConvertBPM_ToTimerTicks(pGenericInfo->Tempo));
+			  // 3-> 1ms
+			  //15-> 5ms
+			  //StartAccentTimer(ArrayOfTimerPointers, 3,  (uint16_t)ConvertBPM_ToTimerTicks(200));
 			  AccentTimerStartFlag =1;
 		  }
 
 		  //check global variable CurrentNumberInSeqState and turn on that LED
-		  TurnOnSequencer(Tipke,NumberButtonIndex);
-
-		  //Tipke[NumberButtonIndex[CurrentNumberInSeqState-1]].SwitchOnDetection = 1;
+		  TurnOnSequencer(Tipke,
+					  	  NumberButtonIndex,
+						  Buttons_varA,
+						  Buttons_varB,
+						  ArrayOfTimerChannels,
+						  ArrayOfTimerPointers2,
+						  InstrumentEnablePin,
+						  GPIO_INSTRUMENT_ENABLE,
+						  Instruments);
 
 
 		  // turn on/off LEDs from Tipke structure, Timer is used for LED blinking
@@ -993,11 +1054,11 @@ int main(void)
 			 // return back to programming state
 			 KickDrumState =0;
 			 //stop ACCENT timer
-			 StopAccentTimer(ArrayOfTimerPointers);
+			 StopAccentTimer(ArrayOfTimerPointers1);
 			 AccentTimerStartFlag =0;
 			 CurrentNumberInSeqState = 1;
 			 TurnOFFAllNumberLED(Tipke, NumberButtonIndex);
-			 // turn on/off LEDs from Tipke structure, Timer is used for LED blinking
+			 // turn on/off LEDs from Tipke structure, when machine is going to sequencer mode all number leds must turn off
 			  CheckStructTipkeSequencerMode(DataFor_IS32, Tipke,0); //LEFT PANEL
 			  CheckStructTipkeSequencerMode(DataFor_IS32_R, Tipke,1); //right PANE
 		 }
@@ -1465,13 +1526,13 @@ static void MX_TIM8_Init(void)
   {
     Error_Handler();
   }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_OC2REF;
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim8, &sMasterConfig) != HAL_OK)
   {
     Error_Handler();
   }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.OCMode = TIM_OCMODE_PWM2;
   sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;

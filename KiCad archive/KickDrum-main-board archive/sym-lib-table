@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name "newlib")(type "KiCad")(uri "${KIPRJMOD}/new componts/ver2/ul_XPS62A01DRLR (1)/KiCADv6/newlib.kicad_sym")(options "")(descr ""))
+)

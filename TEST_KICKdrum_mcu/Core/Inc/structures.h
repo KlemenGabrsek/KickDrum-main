@@ -179,11 +179,15 @@ struct Instrument {
     uint8_t Accent;
     uint8_t OutLevel;
     uint8_t Decay;
+    //each instrument will need so store/convert it's data values to data that can be passed to timers
+    uint8_t Timer_Accent;
+	uint8_t Timer_OutLevel;
+	uint8_t Timer_Decay;
 };
 
 //each button can have up to 6 instrument playing at the same time
 struct Button{
-	struct Instrument pointersToInstrument[NUM_OF_INSTRUMENTS_PER_NUMBER_BUT];
+	struct Instrument *pointersToInstrument[NUM_OF_INSTRUMENTS_PER_NUMBER_BUT];
 	uint8_t NumOfInstruments;
 	uint8_t InstrumentIndexOnThisBut[NUM_OF_INSTRUMENTS_PER_NUMBER_BUT];
 

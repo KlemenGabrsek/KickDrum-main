@@ -94,15 +94,21 @@ uint8_t CopyDataFromSliderToGenericInfoStruct(struct Switch *Tipke,struct  Slide
 uint8_t MapButtonStepsToInstruments(struct Button *Buttons,struct Instrument *Instruments,struct Switch *Tipke,struct  Slider *Sliders,uint8_t *InstrumentIndix,uint8_t * NumberButtonIndex);
 uint8_t MapButtonStepsToInstrumentsAndCheckVar(struct Button *Buttons_varA,struct Button *Buttons_varB,struct Instrument *Instruments,struct Switch *Tipke,struct  Slider *Sliders,uint8_t *InstrumentIndix,uint8_t * NumberButtonIndex);
 
-uint8_t StartAccentTimer( TIM_HandleTypeDef *ArrayOfTimerPointers[10],uint16_t CCR_ms,uint16_t AAR_ms);
-uint8_t StopAccentTimer( TIM_HandleTypeDef *ArrayOfTimerPointers[10]);
+uint8_t StartAccentTimer( TIM_HandleTypeDef *ArrayOfTimerPointers[3],uint16_t CCR_ms,uint16_t AAR_ms);
+uint8_t StopAccentTimer( TIM_HandleTypeDef *ArrayOfTimerPointers[3]);
 uint32_t ConvertBPM_ToTimerTicks(uint16_t BPM);
 uint8_t TurnONNumberLED(struct Switch *Tipke,uint8_t * NumberButtonIndex,uint8_t LEDIndex_1_16);
 uint8_t TurnOFFNumberLED(struct Switch *Tipke,uint8_t * NumberButtonIndex,uint8_t LEDIndex_1_16);
-uint8_t TurnOnSequencer(struct Switch *Tipke,uint8_t * NumberButtonIndex);
+uint8_t TurnOnSequencer(struct Switch *Tipke,uint8_t * NumberButtonIndex,struct Button *Buttons_varA,struct Button *Buttons_varB,uint8_t ArrayOfTimerChannels[8][2],TIM_HandleTypeDef *ArrayOfTimerPointers2[8][2],uint16_t InstrumentEnablePin[9],GPIO_TypeDef* GPIO_INSTRUMENT_ENABLE[9],struct Instrument *Instruments);
 
 uint8_t CheckStructTipkeSequencerMode(struct SendData_BUT21 * DataFor_IS32,struct Switch *Tipke,uint8_t PanelLOrR);
 uint8_t TurnOFFAllNumberLED(struct Switch *Tipke,uint8_t * NumberButtonIndex);
+
+uint8_t ConvertInstrumentDataToTimers(struct Instrument *Instruments);
+uint8_t SetInstrumentValToDefault(struct Instrument *Instruments,uint8_t NumOfIterations);
+uint8_t SetAndStartTimers(struct Instrument *Instruments,uint8_t ArrayOfTimerChannels[8][2],TIM_HandleTypeDef *ArrayOfTimerPointers2[8][2]);
+
+
 
 extern uint8_t LedControlRegAll_[2][3];
 extern uint8_t PwmControlReg1_18_[2][4][5];
