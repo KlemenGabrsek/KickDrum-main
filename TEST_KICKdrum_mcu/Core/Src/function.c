@@ -1419,7 +1419,7 @@ uint8_t CopyDataFromSliderToInstrument(struct Instrument *Instruments,struct Swi
 						//transfer ACCENT
 						Instruments[CurrentPickedInstrument].Accent =  Sliders[2].Index;	// copy Accent slider data to Instrument struct
 					}else if (Tipke[5].LEDOnOff == 0) {// if accent is not yet pressed defaul values of accent in 50
-						Instruments[CurrentPickedInstrument].Accent = 50;
+						Instruments[CurrentPickedInstrument].Accent = 100;
 					}else {
 						while(1);
 					}
@@ -1548,8 +1548,8 @@ uint8_t StartAccentTimer( TIM_HandleTypeDef *ArrayOfTimerPointers[3],uint16_t CC
 	HAL_TIM_PWM_Start_IT(ArrayOfTimerPointers[2], TIM_CHANNEL_2);
 	 // HAL_TIM_Base_Start_IT
 	//set PWM on time to 1 ms
-	TIM8->CCR2 = CCR_ms;
-	TIM8->ARR = AAR_ms;
+	TIM4->CCR2 = CCR_ms;
+	TIM4->ARR = AAR_ms;
 
 
 	return 0;

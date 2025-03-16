@@ -49,6 +49,7 @@ SPI_HandleTypeDef hspi1;
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim4;
 TIM_HandleTypeDef htim5;
 TIM_HandleTypeDef htim8;
 TIM_HandleTypeDef htim10;
@@ -75,6 +76,7 @@ static void MX_TIM5_Init(void);
 static void MX_TIM10_Init(void);
 static void MX_TIM12_Init(void);
 static void MX_TIM13_Init(void);
+static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -239,7 +241,7 @@ int main(void)
 	 // ZBIRKA ZA VSE TIMERJE, za lažje podajanje v funkcije
 	 //ArrayOfTimerPointers[1] SE uporablja za blinky funkcijo
 
-	 TIM_HandleTypeDef *ArrayOfTimerPointers1[] = {&htim1,&htim10,&htim8}; // array for accent timer start and for blinky
+	 TIM_HandleTypeDef *ArrayOfTimerPointers1[] = {&htim1,&htim10,&htim4}; // array for accent timer start and for blinky
 
 
 	 TIM_HandleTypeDef *ArrayOfTimerPointers2[][2] = {{&htim1,&htim1}, //timers for basedrum
@@ -872,6 +874,7 @@ int main(void)
   MX_TIM10_Init();
   MX_TIM12_Init();
   MX_TIM13_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
   /*
@@ -989,7 +992,7 @@ int main(void)
 			 CopyDataFromSliderToGenericInfoStruct(Tipke,Sliders,pGenericInfo);
 			 // funkcija za prepisovanje podatkov iz sliderjev in Tipk v Instruments strukture
 			 CopyDataFromSliderToInstrument(Instruments,Tipke,Sliders,InstrumentIndix);
-			 //funkcija za določanje kateri inštruemnt se mora špilat na kateri tipki
+			 //funkcija za dolo�?anje kateri inštruemnt se mora špilat na kateri tipki
 			 //MapButtonStepsToInstruments(Buttons_varA,Instruments,Tipke,Sliders,InstrumentIndix,NumberButtonIndex);
 			 MapButtonStepsToInstrumentsAndCheckVar(Buttons_varA,Buttons_varB,Instruments,Tipke,Sliders,InstrumentIndix,NumberButtonIndex);
 			 // turn on/off LEDs from Tipke structure, Timer is used for LED blinking
@@ -1020,11 +1023,14 @@ int main(void)
 			  //start ACCENT level timer
 			  HAL_TIM_PWM_Start(		&htim3,//&htim3
 			  							TIM_CHANNEL_1);//channel 1
+			  //start TIM8 in one pulse mode
+			  HAL_TIM_OnePulse_Start(&htim8,TIM_CHANNEL_2);
 
 			  //convert instrument data to data that can be passed to timers-> this has to be done ony once
 			  //ConvertInstrumentDataToTimers(Instruments);
 			  //start ACCENT timer
-			  StartAccentTimer(ArrayOfTimerPointers1, 15,  ConvertBPM_ToTimerTicks(pGenericInfo->Tempo));
+			  StartAccentTimer(ArrayOfTimerPointers1, 3,  ConvertBPM_ToTimerTicks(pGenericInfo->Tempo));
+			  //second parameter in upper function determinated how long should the pulse be
 			  // 3-> 1ms
 			  //15-> 5ms
 			  //StartAccentTimer(ArrayOfTimerPointers, 3,  (uint16_t)ConvertBPM_ToTimerTicks(200));
@@ -1438,6 +1444,64 @@ static void MX_TIM3_Init(void)
 }
 
 /**
+  * @brief TIM4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM4_Init(void)
+{
+
+  /* USER CODE BEGIN TIM4_Init 0 */
+
+  /* USER CODE END TIM4_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM4_Init 1 */
+
+  /* USER CODE END TIM4_Init 1 */
+  htim4.Instance = TIM4;
+  htim4.Init.Prescaler = 28000;
+  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim4.Init.Period = 9000;
+  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM4_Init 2 */
+
+  /* USER CODE END TIM4_Init 2 */
+
+}
+
+/**
   * @brief TIM5 Initialization Function
   * @param None
   * @retval None
@@ -1499,6 +1563,7 @@ static void MX_TIM8_Init(void)
   /* USER CODE END TIM8_Init 0 */
 
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_SlaveConfigTypeDef sSlaveConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_OC_InitTypeDef sConfigOC = {0};
   TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
@@ -1509,7 +1574,7 @@ static void MX_TIM8_Init(void)
   htim8.Instance = TIM8;
   htim8.Init.Prescaler = 56000;
   htim8.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim8.Init.Period = 9000;
+  htim8.Init.Period = 78;
   htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim8.Init.RepetitionCounter = 0;
   htim8.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -1522,24 +1587,34 @@ static void MX_TIM8_Init(void)
   {
     Error_Handler();
   }
-  if (HAL_TIM_PWM_Init(&htim8) != HAL_OK)
+  if (HAL_TIM_OC_Init(&htim8) != HAL_OK)
   {
     Error_Handler();
   }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  if (HAL_TIM_OnePulse_Init(&htim8, TIM_OPMODE_SINGLE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_TRIGGER;
+  sSlaveConfig.InputTrigger = TIM_TS_ITR2;
+  if (HAL_TIM_SlaveConfigSynchro(&htim8, &sSlaveConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim8, &sMasterConfig) != HAL_OK)
   {
     Error_Handler();
   }
-  sConfigOC.OCMode = TIM_OCMODE_PWM2;
-  sConfigOC.Pulse = 0;
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 76;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
   sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-  if (HAL_TIM_PWM_ConfigChannel(&htim8, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  if (HAL_TIM_OC_ConfigChannel(&htim8, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -1835,7 +1910,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 
 
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim){
-	if(htim->Instance==TIM8){
+	if(htim->Instance==TIM4){
 			CurrentNumberInSeqState++;
 			if(CurrentNumberInSeqState > 16){
 				CurrentNumberInSeqState=1;
